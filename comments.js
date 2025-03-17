@@ -1,27 +1,16 @@
-// create web server
-const express = require('express');
-const app = express();
+// create a web server
+
+const http = require('http');
+
+const hostname = '127.0.0.1';
 const port = 3000;
 
-// create a variable to store comments
-const comments = [];
-
-// middleware to parse the request body
-app.use(express.json());
-
-// get all comments
-app.get('/comments', (req, res) => {
-  res.json(comments);
+const server = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/plain');
+  res.end('Hello, World!\n');
 });
 
-// create a new comment
-app.post('/comments', (req, res) => {
-  const comment = req.body;
-  comments.push(comment);
-  res.status(201).json(comment);
-});
-
-// start the server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+server.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`);
 });
