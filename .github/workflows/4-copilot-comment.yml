@@ -1,36 +1,51 @@
 name: Step 4, Add Copilot suggestion from comment
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "comments.js"
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  get_current_step:
+    name: Check current step number
     runs-on: ubuntu-latest
-    env:
-      FILE: "path/to/your/file"
-      SEARCH: "search_string"
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+      - id: get_step
+        run: echo "current_step=$(cat ./.github/steps/-step.txt)" >> $GITHUB_OUTPUT
+    outputs:
+      current_step: ${{ steps.get_step.outputs.current_step }}
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
+  on_push_to_comments:
+    name: On code generated from comment
+    needs: get_current_step
+    if: ${{ !github.event.repository.is_template && needs.get_current_step.outputs.current_step == 4}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Run your script
-      run: |
-        echo "Check that all required env variables are set"
-        if [ -z "$FILE" ]; then
-          echo "FILE is unset or set to the empty string"
-          exit 1
-        fi
-        if [ -z "$SEARCH" ]; then
-          echo "SEARCH is unset or set to the empty string"
-          exit 1
-        fi
-        if ! grep -q "$SEARCH" "$FILE"; then
-          echo "Missing $SEARCH in $FILE"
-          echo "----------------"
-          cat "$FILE"
-          exit 204
-        fi
+      - name: Check workflow contents, jobs
+        uses: skills/action-check-file@v1
+        env:
+          FILE: "comments.js"
+          SEARCH: "Create web server"
+        with:
+          file: ${{ env.FILE }}
+          search: ${{ env.SEARCH }}
+
+      - name: Update to step X
+        uses: skills/action-update-step@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          from_step: 4
+          to_step: X
